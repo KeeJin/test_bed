@@ -9,7 +9,7 @@ then
     mkdir ~/test_bed/build
 fi
 
-cc -o ~/test_bed/build/test_bed ~/test_bed/src/test_bed.c
+cc -o ~/test_bed/build/test_bed ~/test_bed/app/test_bed.c
 echo "Compilation complete. Running executable... "
 echo "======================================================="
 ~/test_bed/build/test_bed
