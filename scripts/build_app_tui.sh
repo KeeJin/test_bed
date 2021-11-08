@@ -9,7 +9,7 @@ then
     mkdir ~/test_bed/build
 fi
 
-cc -o ~/test_bed/build/app_tui ~/test_bed/app/app_tui.c -lncurses
+cc -o ~/test_bed/build/app_tui ~/test_bed/app/app_tui.c -lncurses -lm
 echo "Compilation complete. Running executable... "
 echo "======================================================="
 ~/test_bed/build/app_tui
