@@ -117,7 +117,7 @@ int main(void) {
         mvwin(win_toggle, y_padding + win_wave_plot_height,
               x_padding + 2 * win_panel_width);
 
-        wclear(stdscr);
+        // wclear(stdscr);
         wclear(win_wave_plot);
         wclear(win_description);
         wclear(win_feedback);
