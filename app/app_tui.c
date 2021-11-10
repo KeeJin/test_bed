@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+// #define DEBUG
+
 // --------------------------- Global variables ------------------------------
 // Initialise windows
 WINDOW* win_wave_plot;
@@ -24,7 +26,8 @@ typedef enum _graphType {
 } GraphType;
 
 // Datapoint generation
-Coordinate* GenerateCoordinates(GraphType type, int point_size, float freq);
+Coordinate* GenerateCoordinates(GraphType type, int point_size, float amplitude,
+                                float freq);
 
 // Drawing functions
 void DrawAxes();
@@ -32,12 +35,15 @@ void DrawPoint(int point_x, int point_y);
 void DrawPointSet(Coordinate* target_pair, int size);
 void LocateLimits(Coordinate* target_pair, int size, int* x_lower_bound,
                   int* x_upper_bound, int* y_lower_bound, int* y_upper_bound);
+void UpdateStats(float amplitude, float frequency);
 
 int main(void) {
+#ifndef DEBUG
   initscr(); /* Start curses mode */
   noecho();
   curs_set(0);
   keypad(stdscr, true);
+#endif
 
   int cached_y_max, cached_x_max, y_max, x_max;
   int win_panel_height, win_panel_width;
@@ -57,6 +63,7 @@ int main(void) {
   win_panel_height = cached_y_max * 4 / 11 - 1;
   win_panel_width = win_wave_plot_width / 3;
 
+#ifndef DEBUG
   // Initialise windows
   win_wave_plot =
       newwin(win_wave_plot_height, win_wave_plot_width, y_padding, x_padding);
@@ -85,59 +92,67 @@ int main(void) {
   mvwprintw(win_toggle, 2, 2, "Graph Type: SINE");
 
   DrawAxes();
+#endif
 
   int points_len = 100;
+  float amplitude = 3;
   float freq = 2.5;
-  GraphType graph_type = SINE;
-  Coordinate* points = GenerateCoordinates(graph_type, points_len, freq);
+  GraphType graph_type = TRIANGULAR;
+  Coordinate* points =
+      GenerateCoordinates(graph_type, points_len, amplitude, freq);
+#ifndef DEBUG
   DrawPointSet(points, points_len);
 
   while (key != 'q') {
-    if (key == KEY_RESIZE) {
-      getmaxyx(stdscr, y_max, x_max);
-
-      // Check if window size has change - if yes, recalculate
-      if (y_max != cached_y_max || x_max != cached_x_max) {
-        cached_x_max = x_max;
-        cached_y_max = y_max;
-        win_wave_plot_height = cached_y_max * 7 / 11;
-        win_wave_plot_width = cached_x_max - 2 * x_padding;
-        win_panel_height = cached_y_max * 4 / 11 - 1;
-        win_panel_width = win_wave_plot_width / 3;
-
-        wresize(win_wave_plot, win_wave_plot_height, win_wave_plot_width);
-        wresize(win_description, win_panel_height, win_panel_width);
-        wresize(win_feedback, win_panel_height, win_panel_width);
-        wresize(win_toggle, win_panel_height, win_panel_width);
-
-        mvwin(win_wave_plot, y_padding, x_padding);
-        mvwin(win_description, y_padding + win_wave_plot_height, x_padding);
-        mvwin(win_feedback, y_padding + win_wave_plot_height,
-              x_padding + win_panel_width);
-        mvwin(win_toggle, y_padding + win_wave_plot_height,
-              x_padding + 2 * win_panel_width);
-
-        // wclear(stdscr);
-        wclear(win_wave_plot);
-        wclear(win_description);
-        wclear(win_feedback);
-        wclear(win_toggle);
-
-        DrawAxes();
-        box(win_wave_plot, 0, 0);
-        box(win_description, 0, 0);
-        box(win_feedback, 0, 0);
-        box(win_toggle, 0, 0);
-        DrawPointSet(points, points_len);
-
-        mvwprintw(win_wave_plot, 0, 2, " Wave Plot ");
-        mvwprintw(win_description, 0, 2, " Description ");
-        mvwprintw(win_feedback, 0, 2, " Statistics ");
-        mvwprintw(win_toggle, 0, 2, " Controls ");
-      }
-    }
-
     switch (key) {
+      case KEY_RESIZE:
+        getmaxyx(stdscr, y_max, x_max);
+
+        // Check if window size has change - if yes, recalculate
+        if (y_max != cached_y_max || x_max != cached_x_max) {
+          cached_x_max = x_max;
+          cached_y_max = y_max;
+          win_wave_plot_height = cached_y_max * 7 / 11;
+          win_wave_plot_width = cached_x_max - 2 * x_padding;
+          win_panel_height = cached_y_max * 4 / 11 - 1;
+          win_panel_width = win_wave_plot_width / 3;
+
+          wresize(win_wave_plot, win_wave_plot_height, win_wave_plot_width);
+          wresize(win_description, win_panel_height, win_panel_width);
+          wresize(win_feedback, win_panel_height, win_panel_width);
+          wresize(win_toggle, win_panel_height, win_panel_width);
+
+          mvwin(win_wave_plot, y_padding, x_padding);
+          mvwin(win_description, y_padding + win_wave_plot_height, x_padding);
+          mvwin(win_feedback, y_padding + win_wave_plot_height,
+                x_padding + win_panel_width);
+          mvwin(win_toggle, y_padding + win_wave_plot_height,
+                x_padding + 2 * win_panel_width);
+
+          // wclear(stdscr);
+          wclear(win_wave_plot);
+          wclear(win_description);
+          wclear(win_feedback);
+          wclear(win_toggle);
+
+          DrawAxes();
+          box(win_wave_plot, 0, 0);
+          box(win_description, 0, 0);
+          box(win_feedback, 0, 0);
+          box(win_toggle, 0, 0);
+          DrawPointSet(points, points_len);
+
+          mvwprintw(win_wave_plot, 0, 2, " Wave Plot ");
+          mvwprintw(win_description, 0, 2, " Description ");
+          mvwprintw(win_feedback, 0, 2, " Statistics ");
+          mvwprintw(win_toggle, 0, 2, " Controls ");
+          mvwprintw(win_toggle, 2, 2, "Graph Type: ");
+          mvwprintw(win_toggle, 2, 14,
+                    graph_types_toggle[graph_types_toggle_index]);
+          UpdateStats(amplitude, freq);
+        }
+        break;
+
       case KEY_LEFT:
         if (graph_types_toggle_index == 0) {
           graph_types_toggle_index = 3;
@@ -145,7 +160,7 @@ int main(void) {
           graph_types_toggle_index--;
         }
         graph_type = graph_types_toggle_index;
-        points = GenerateCoordinates(graph_type, points_len, freq);
+        points = GenerateCoordinates(graph_type, points_len, amplitude, freq);
         wclear(win_wave_plot);
         wclear(win_toggle);
         DrawAxes();
@@ -165,7 +180,7 @@ int main(void) {
           graph_types_toggle_index++;
         }
         graph_type = graph_types_toggle_index;
-        points = GenerateCoordinates(graph_type, points_len, freq);
+        points = GenerateCoordinates(graph_type, points_len, amplitude, freq);
         wclear(win_wave_plot);
         wclear(win_toggle);
         DrawAxes();
@@ -191,6 +206,7 @@ int main(void) {
   }
 
   endwin(); /* End curses mode */
+#endif
   return 0;
 }
 
@@ -269,7 +285,8 @@ void DrawPointSet(Coordinate* target_pair, int size) {
   //        x_upper_bound);
   // printf("y_lower_bound: %d, y_upper_bound: %d\n", y_lower_bound,
   //        y_upper_bound);
-  // printf("Width: %d, Height: %d\n", win_wave_plot_width, win_wave_plot_height);
+  // printf("Width: %d, Height: %d\n", win_wave_plot_width,
+  // win_wave_plot_height);
 
   for (int i = 0; i < size; ++i) {
     // printf("og x: %d, og y: %d\n", target_pair[i].x, target_pair[i].y);
@@ -303,13 +320,16 @@ void LocateLimits(Coordinate* target_pair, int size, int* x_lower_bound,
   }
 }
 
-Coordinate* GenerateCoordinates(GraphType type, int point_size, float freq) {
+Coordinate* GenerateCoordinates(GraphType type, int point_size, float amplitude,
+                                float frequency) {
   Coordinate* coords = (Coordinate*)malloc(point_size * sizeof(Coordinate));
   switch (type) {
     case SINE:
       for (int i = 0; i < point_size; ++i) {
         coords[i].x = i;
-        coords[i].y = sin(freq * ((double)i / point_size) * (2 * M_PI)) * 100;
+        coords[i].y = amplitude *
+                      sin(frequency * ((double)i / point_size) * (2 * M_PI)) *
+                      100;
       }
       break;
     case SQUARE:
@@ -320,12 +340,29 @@ Coordinate* GenerateCoordinates(GraphType type, int point_size, float freq) {
       }
       break;
     case TRIANGULAR:
-      // TODO
-      for (int i = 0; i < point_size; ++i) {
-        coords[i].x = i;
-        coords[i].y = i;
+      {
+        int cached_x1, cached_x2, cached_y;
+        float x_proportion;
+        for (int i = 0; i < point_size; ++i) {
+          x_proportion = (float)i / (float)point_size;
+          coords[i].x = i * 1;
+
+          if (x_proportion < 0.25) {
+            coords[i].y = i * 1;
+            cached_x1 = i;
+          } else if (x_proportion < 0.75) {
+            coords[i].y = (cached_x1 - (i - cached_x1)) * 1;
+            cached_y = coords[i].y;
+            cached_x2 = i;
+          } else {
+            coords[i].y = (cached_y + (i - cached_x2)) * 1;
+          }
+          // printf("proportion: %.3f, x: %d, y: %d\n", x_proportion,
+          // coords[i].x, coords[i].y);
+        }
+
+        break;
       }
-      break;
     case SAWTOOTH:
       // TODO
       for (int i = 0; i < point_size; ++i) {
@@ -336,5 +373,17 @@ Coordinate* GenerateCoordinates(GraphType type, int point_size, float freq) {
     default:
       break;
   }
+  UpdateStats(amplitude, frequency);
   return coords;
+}
+
+void UpdateStats(float amplitude, float frequency) {
+  float period;
+  period = 1 / frequency;
+  mvwprintw(win_feedback, 2, 2, "Amplitude: ");
+  mvwprintw(win_feedback, 3, 2, "Frequency: ");
+  mvwprintw(win_feedback, 4, 2, "Period: ");
+  mvwprintw(win_feedback, 2, 13, "%.3f", amplitude);
+  mvwprintw(win_feedback, 3, 13, "%.3f Hz", frequency);
+  mvwprintw(win_feedback, 4, 13, "%.3f seconds", period);
 }
