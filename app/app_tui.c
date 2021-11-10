@@ -95,14 +95,13 @@ int main(void) {
 #endif
 
   int points_len = 100;
-  float amplitude = 3;
-  float freq = 2.5;
-  GraphType graph_type = TRIANGULAR;
+  float amplitude = 1;
+  float freq = 1.5;
+  GraphType graph_type = SINE;
   Coordinate* points =
       GenerateCoordinates(graph_type, points_len, amplitude, freq);
-#ifndef DEBUG
   DrawPointSet(points, points_len);
-
+#ifndef DEBUG
   while (key != 'q') {
     switch (key) {
       case KEY_RESIZE:
@@ -294,13 +293,15 @@ void DrawPointSet(Coordinate* target_pair, int size) {
     int x, y;
     x = target_pair[i].x * (win_wave_plot_width - 10) /
         ((x_upper_bound - x_lower_bound));
-    y = target_pair[i].y * (win_wave_plot_height - 5) /
+    y = target_pair[i].y * (win_wave_plot_height / 1.8 - 2.0) /
         ((y_upper_bound - y_lower_bound));
-    // x = target_pair[i].x;
-    // y = target_pair[i].y;
+// x = target_pair[i].x;
+// y = target_pair[i].y;
 
-    // printf("x: %d, y: %d\n", x, y);
+// printf("x: %d, y: %d\n", x, y);
+#ifndef DEBUG
     DrawPoint(x, y);
+#endif
   }
 }
 
@@ -332,44 +333,85 @@ Coordinate* GenerateCoordinates(GraphType type, int point_size, float amplitude,
                       100;
       }
       break;
-    case SQUARE:
-      // TODO
-      for (int i = 0; i < point_size; ++i) {
+    case SQUARE: {
+      int step_size;
+      float x_proportion;
+      step_size = (float)point_size / (float)frequency - 2;
+      for (int i = 0; i < step_size; ++i) {
+        x_proportion = (float)i / (float)step_size;
         coords[i].x = i;
-        coords[i].y = i;
-      }
-      break;
-    case TRIANGULAR:
-      {
-        int cached_x1, cached_x2, cached_y;
-        float x_proportion;
-        for (int i = 0; i < point_size; ++i) {
-          x_proportion = (float)i / (float)point_size;
-          coords[i].x = i * 1;
 
-          if (x_proportion < 0.25) {
-            coords[i].y = i * 1;
-            cached_x1 = i;
-          } else if (x_proportion < 0.75) {
-            coords[i].y = (cached_x1 - (i - cached_x1)) * 1;
-            cached_y = coords[i].y;
-            cached_x2 = i;
-          } else {
-            coords[i].y = (cached_y + (i - cached_x2)) * 1;
-          }
-          // printf("proportion: %.3f, x: %d, y: %d\n", x_proportion,
-          // coords[i].x, coords[i].y);
+        if (x_proportion < 0.5) {
+          coords[i].y = amplitude * 15;
+        } else {
+          coords[i].y = amplitude * -15;
         }
-
-        break;
+        // printf("proportion: %.3f, x: %d, y: %d\n", x_proportion,
+        // coords[i].x, coords[i].y);
       }
-    case SAWTOOTH:
-      // TODO
-      for (int i = 0; i < point_size; ++i) {
-        coords[i].x = i;
-        coords[i].y = i;
+      int k = 0;
+      for (int j = step_size; j < (step_size + ((frequency - 1) * step_size));
+           ++j) {
+        coords[j].x = j;
+        coords[j].y = coords[k].y;
+        k++;
       }
       break;
+    }
+    case TRIANGULAR: {
+      int cached_x1, cached_x2, cached_y, step_size;
+      float x_proportion;
+      step_size = (float)point_size / (float)frequency - 2;
+
+      for (int i = 0; i < step_size; ++i) {
+        x_proportion = (float)i / (float)step_size;
+        coords[i].x = i;
+
+        if (x_proportion < 0.25) {
+          coords[i].y = i;
+          cached_x1 = i;
+        } else if (x_proportion < 0.75) {
+          coords[i].y = (cached_x1 - (i - cached_x1));
+          cached_y = coords[i].y;
+          cached_x2 = i;
+        } else {
+          coords[i].y = (cached_y + (i - cached_x2));
+        }
+        // printf("proportion: %.3f, x: %d, y: %d\n", x_proportion,
+        // coords[i].x, coords[i].y);
+      }
+      int k = 0;
+      for (int j = step_size; j < (step_size + ((frequency - 1) * step_size));
+           ++j) {
+        coords[j].x = j;
+        coords[j].y = coords[k].y;
+        k++;
+      }
+
+      break;
+    }
+    case SAWTOOTH: {
+      int cached_y, step_size, step_count;
+      float x_proportion;
+      step_count = frequency * 2;
+      step_size = (float)point_size / (float)step_count - 2;
+
+      for (int i = 0; i < step_size; ++i) {
+        x_proportion = (float)i / (float)step_size;
+        coords[i].x = i;
+        coords[i].y = 10 * (float)i * amplitude / (float)step_size;
+        // printf("x: %d, y: %d\n", coords[i].x, coords[i].y);
+      }
+      int k = 0;
+      for (int j = step_size; j < (step_size + ((step_count - 1) * step_size));
+           ++j) {
+        coords[j].x = j;
+        coords[j].y = coords[k].y;
+        k++;
+      }
+
+      break;
+    }
     default:
       break;
   }
